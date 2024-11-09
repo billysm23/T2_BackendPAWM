@@ -1,22 +1,40 @@
-import cors from 'cors';
-import express from 'express';
-import { errorHandler } from './middleware/error';
-import authRoutes from './routes/auth';
-import lessonRoutes from './routes/lessons';
-import quizRoutes from './routes/quizzes';
-import userRoutes from './routes/users';
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const connectDB = require('./config/database');
+const authRoutes = require('./routes/authRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+//const userProgressRoutes = require('./routes/userProgressRoutes');
 
 const app = express();
+connectDB();
 
+// middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/lessons', lessonRoutes);
-app.use('/api/quizzes', quizRoutes);
+app.use('/api/quiz', quizRoutes);
+//app.use('/api/progress', userProgressRoutes);
 
-app.use(errorHandler);
+// testing
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to CT Lab API' });
+});
 
-export default app;
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        success: false,
+        error: 'Something went wrong!'
+    });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
