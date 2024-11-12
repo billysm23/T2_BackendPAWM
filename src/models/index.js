@@ -1,13 +1,13 @@
 const User = require('./user');
 const Lesson = require('./lesson');
-const UserLesson = require('./userLesson');
+const UserLesson = require('./userProgress');
 const Question = require('./question');
-const UserQuiz = require('./userQuiz');
+const UserProgress = require('./userProgress');
 
 module.exports = {
     User,
     Lesson,
     UserLesson,
     Question,
-    UserQuiz
+    UserProgress
 };

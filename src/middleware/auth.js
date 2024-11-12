@@ -1,13 +1,28 @@
+// src/middleware/auth.js
 const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 const auth = async (req, res, next) => {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
+        // verifikasi token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.userId;
+        // cari user
+        const user = await User.findById(decoded.userId);
+        // user tidak ada
+        if (!user) {
+            throw new Error('User not found');
+        }
+        // kalau ada, user melakukan request
+        req.user = user;
+        req.token = token;
         next();
     } catch (error) {
-        res.status(401).json({ error: 'Please authenticate.' });
+        console.error('Auth error:', error);
+        res.status(401).json({ 
+            success: false, 
+            error: 'Please authenticate properly' 
+        });
     }
 };
 
