@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-//router.post('/logout', authController.logout); BELUM
+router.post('/logout', auth, authController.logout);
+router.put('/update-password', auth, authController.updatePassword);
 
 module.exports = router;
