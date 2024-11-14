@@ -5,7 +5,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=mongodb+srv://bllysm23:Carefor123@ct-lab.k2gqo.mongodb.net/?retryWrites=true&w=majority&appName=CT-lab
+      - MONGODB_URI=mongodb+srv://bllysm23:Carefor123@ct-lab.k2gqo.mongodb.net/?retryWrites=true&w=majority&appName=CT-lab/ct-lab
       - JWT_SECRET=your_jwt_secret_here
     volumes:
       - .:/usr/src/app
