@@ -15,7 +15,7 @@ connectDB();
 app.use(helmetConfig);
 app.use(rateLimitConfig);
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'https://t2-frontend-pawm.vercel.app/',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
