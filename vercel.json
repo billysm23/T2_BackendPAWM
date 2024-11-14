@@ -2,31 +2,33 @@
     "version": 2,
     "buildCommand": "npm run vercel-build",
     "builds": [
-        {
-            "src": "src/app.js",
-            "use": "@vercel/node"
-        }
+      {
+        "src": "src/app.js",
+        "use": "@vercel/node"
+      }
     ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "src/app.js",
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-        },
-        {
-            "src": "/(.*)",
-            "dest": "src/app.js",
-            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-        }
+    "rewrites": [
+      {
+        "source": "/api/(.*)",
+        "destination": "src/app.js"
+      },
+      {
+        "source": "/(.*)",
+        "destination": "src/app.js"
+      }
     ],
     "headers": [
-        {
-            "source": "/api/(.*)",
-            "headers": [
-            { "key": "Access-Control-Allow-Origin", "value": "*" },
-            { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
-            { "key": "Access-Control-Allow-Headers", "value": "X-Requested-With,Content-Type,Accept,Authorization" }
-            ]
-        }
-    ]
+      {
+        "source": "/api/(.*)",
+        "headers": [
+          { "key": "Access-Control-Allow-Credentials", "value": "true" },
+          { "key": "Access-Control-Allow-Origin", "value": "${ALLOWED_ORIGINS}" },
+          { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
+          { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" }
+        ]
+      }
+    ],
+    "env": {
+      "NODE_ENV": "production"
+    }
 }
