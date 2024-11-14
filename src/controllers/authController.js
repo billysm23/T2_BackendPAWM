@@ -227,33 +227,44 @@ exports.login = asyncHandler(async (req, res, next) => {
 });
 
 exports.logout = asyncHandler(async (req, res, next) => {
-    // Cek apakah sudah ada session aktif
-    const existingSession = await Session.findOne({
-        userId: user._id,
-        isActive: true
-    });
-    if (!existingSession) {
-        throw new AppError(
-            'User hasn\'t logged in. Please login first',
-            400,
-            ErrorCodes.SESSION_INVALID
-        );
-    }
-
-    // Nonaktifkan session
-    await Session.findOneAndUpdate(
-        { 
+    try {
+        // Cek apakah sudah ada session aktif
+        const existingSession = await Session.findOne({
             userId: req.user._id,
             token: req.token,
             isActive: true
-        },
-        { isActive: false }
-    );
+        });
+        if (!existingSession) {
+            throw new AppError(
+                'User hasn\'t logged in. Please login first',
+                400,
+                ErrorCodes.SESSION_INVALID
+            );
+        }
 
-    res.json({
-        success: true,
-        message: 'Successfully logged out'
-    });
+        // Nonaktifkan session
+        await Session.findOneAndUpdate(
+            {
+                _id: existingSession._id
+            },
+            {
+                isActive: false,
+                logoutAt: new Date()
+            }
+        );
+
+        res.json({
+            success: true,
+            message: 'Successfully logged out'
+        });
+    } catch (error) {
+        console.error('Logout error:', {
+            userId: req.user?._id,
+            token: req.token,
+            error: error.message
+        });
+        throw error;
+    }
 });
 
 exports.updatePassword = asyncHandler(async (req, res, next) => {
