@@ -57,7 +57,7 @@ const rateLimitConfig = rateLimit({
 
 // Rate Limiter khusus untuk authentication
 const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 jam
+    windowMs: 10 * 1000, // 10 detik untuk testing
     max: 5, // maksimum 5 percobaan login per IP
     message: {
         success: false,
