@@ -1,25 +1,32 @@
 {
     "version": 2,
+    "buildCommand": "npm run vercel-build",
     "builds": [
         {
-        "src": "./src/app.js",
-        "use": "@vercel/node"
+            "src": "src/app.js",
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
-        "src": "/api/(.*)",
-        "dest": "./src/app.js"
+            "src": "/api/(.*)",
+            "dest": "src/app.js",
+            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
         },
         {
-        "src": "/(.*)",
-        "dest": "./src/app.js"
+            "src": "/(.*)",
+            "dest": "src/app.js",
+            "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
         }
     ],
-    "env": {
-        "MONGODB_URI": "@mongodb_uri",
-        "JWT_SECRET": "@jwt_secret",
-        "NODE_ENV": "production",
-        "ALLOWED_ORIGINS": "@allowed_origins"
-    }
+    "headers": [
+        {
+            "source": "/api/(.*)",
+            "headers": [
+            { "key": "Access-Control-Allow-Origin", "value": "*" },
+            { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,PATCH,DELETE,OPTIONS" },
+            { "key": "Access-Control-Allow-Headers", "value": "X-Requested-With,Content-Type,Accept,Authorization" }
+            ]
+        }
+    ]
 }

@@ -1,7 +1,6 @@
 {
   "name": "ct-lab-backend",
   "version": "1.0.0",
-  "description": "Backend REST API for CT Lab",
   "main": "src/app.js",
   "engines": {
     "node": "18.x"
@@ -9,7 +8,8 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "seed": "node scripts/seedData.js"
+    "vercel-build": "echo \"No build required\"",
+    "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
