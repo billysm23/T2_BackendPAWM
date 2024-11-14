@@ -11,7 +11,7 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 connectDB();
 
-// middleware
+// Middleware
 app.use(helmetConfig);
 app.use(rateLimitConfig);
 const corsOptions = {
@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 app.use('/api/auth', authLimiter);
 
-// routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/quiz', quizRoutes);
@@ -36,7 +36,7 @@ app.use('/api/progress', userProgressRoutes);
 
 app.use(errorHandler);
 
-// testing
+// Testing
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to CT Lab API' });
 });
