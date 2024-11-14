@@ -129,24 +129,11 @@ exports.register = asyncHandler(async (req, res, next) => {
 
 exports.login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
-
-    // Cek apakah sudah ada session aktif
-    const existingSession = await Session.findOne({
-        userId: user._id,
-        isActive: true
-    });
-    if (existingSession) {
-        throw new AppError(
-            'User already logged in. Please logout first',
-            400,
-            ErrorCodes.SESSION_EXISTS
-        );
-    }
-
+    
     // Validasi email dan password untuk login
     validateEmail(email);
     validatePassword(password);
-
+    
     // Cek user terdaftar atau tidak
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
@@ -156,7 +143,7 @@ exports.login = asyncHandler(async (req, res, next) => {
             ErrorCodes.USER_NOT_FOUND
         );
     }
-
+    
     // Cek password
     const isPasswordTrue = await bcrypt.compare(password, user.password);
     if (!isPasswordTrue) {
@@ -166,7 +153,20 @@ exports.login = asyncHandler(async (req, res, next) => {
             ErrorCodes.INVALID_CREDENTIALS
         );
     }
-
+    
+        // Cek apakah sudah ada session aktif
+        const existingSession = await Session.findOne({
+            userId: user._id,
+            isActive: true
+        });
+        if (existingSession) {
+            throw new AppError(
+                'User already logged in. Please logout first',
+                400,
+                ErrorCodes.SESSION_EXISTS
+            );
+        }
+    
     // Generate token
     const token = generateToken(user._id, user.username);
 
