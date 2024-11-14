@@ -14,11 +14,21 @@ const sessionSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    lastActivity: {
+        type: Date,
+        default: Date.now
+    },
+    expiresAt: {
+        type: Date,
+        required: true
+    },
     createdAt: {
         type: Date,
-        default: Date.now,
-        expires: 24 * 60 * 60 // Otomatis hapus setelah 24 jam
+        default: Date.now
     }
 });
+
+// Buang expired session
+sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Session', sessionSchema);

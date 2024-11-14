@@ -127,9 +127,41 @@ exports.register = asyncHandler(async (req, res, next) => {
     });
 });
 
+const SESSION_CONFIG = {
+    MAX_ACTIVE_SESSIONS: 2,
+    SESSION_EXPIRY: 24 * 60 * 60 * 1000 // 24 jam
+};
+
 exports.login = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body;
     
+    // Dapatkan token dari header jika ada
+    const existingToken = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (existingToken) {
+        try {
+            const decoded = jwt.verify(existingToken, process.env.JWT_SECRET);
+            const activeSession = await Session.findOne({
+                userId: decoded.userId,
+                token: existingToken,
+                isActive: true
+            });
+
+            if (activeSession) {
+                throw new AppError(
+                    'You have an active session. Please logout first.',
+                    400,
+                    ErrorCodes.SESSION_EXISTS
+                );
+            }
+        } catch (err) {
+            // Jika token tidak valid atau expired, lanjutkan proses login
+            if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
+                throw err;
+            }
+        }
+    }
+
     // Validasi email dan password untuk login
     validateEmail(email);
     validatePassword(password);
@@ -154,18 +186,19 @@ exports.login = asyncHandler(async (req, res, next) => {
         );
     }
     
-        // Cek apakah sudah ada session aktif
-        const existingSession = await Session.findOne({
-            userId: user._id,
-            isActive: true
-        });
-        if (existingSession) {
-            throw new AppError(
-                'User already logged in. Please logout first',
-                400,
-                ErrorCodes.SESSION_EXISTS
-            );
-        }
+    // Cek apakah sudah ada session aktif
+    const activeSessions = await Session.find({
+        userId: user._id,
+        isActive: true
+    });
+
+    // Jika melebihi batas, nonaktifkan semua session lama
+    if (activeSessions.length >= SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
+        await Session.updateMany(
+            { userId: user._id, isActive: true },
+            { isActive: false }
+        );
+    }
     
     // Generate token
     const token = generateToken(user._id, user.username);
@@ -173,7 +206,9 @@ exports.login = asyncHandler(async (req, res, next) => {
     // Buat session baru
     await Session.create({
         userId: user._id,
-        token
+        token,
+        isActive: true,
+        expiresAt: new Date(Date.now() + SESSION_CONFIG.SESSION_EXPIRY)
     });
 
     user.password = undefined;
