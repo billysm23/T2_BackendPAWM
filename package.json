@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend REST API for CT Lab",
   "main": "src/app.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
