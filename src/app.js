@@ -18,16 +18,28 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // CORS configuration
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://t2-frontend-pawm.vercel.app'
+];
+
 const corsOptions = {
-    origin: [
-        'http://localhost:3000',
-        'https://t2-frontend-pawm.vercel.app'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-    maxAge: 600
+    optionsSuccessStatus: 200
 };
+
 app.use(cors(corsOptions));
 
 // Security middleware
