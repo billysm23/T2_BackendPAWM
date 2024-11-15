@@ -8,24 +8,28 @@ const lessonRoutes = require('./routes/lessonRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const userProgressRoutes = require('./routes/userProgressRoutes');
 const errorHandler = require('./middleware/errorHandler');
-const app = express();
+const ErrorCodes = require('./utils/errors/errorCodes');
 connectDB();
 
-// Middleware
-app.use(helmetConfig);
-app.use(rateLimitConfig);
-const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'https://t2-frontend-pawm.vercel.app/',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    credentials: true,
-    maxAge: 600 // 10 menit
-};
-app.use(cors(corsOptions));
-app.use(express.json({ limit: '10kb' })); // Membatasi ukuran body JSON
+const app = express();
+
+// Basic middleware
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+// CORS configuration
+const corsOptions = {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    maxAge: 600
+};
+app.use(cors(corsOptions));
+
+// Security middleware
+app.use(helmetConfig);
+app.use(rateLimitConfig);
 app.use('/api/auth', authLimiter);
 
 // Routes
