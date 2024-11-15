@@ -1,9 +1,11 @@
 const UserProgress = require('../models/userProgress');
 const User = require('../models/user');
 
+// Get semua progress
 exports.getUserProgress = async (req, res) => {
     try {
         let progress = await UserProgress.findOne({ username: req.user.username });
+        // Jika tidak ada progress yang sudah berjalan
         if (!progress) {
             progress = new UserProgress({
                 username: req.user.username,
@@ -26,10 +28,39 @@ exports.getUserProgress = async (req, res) => {
     }
 };
 
+exports.getTheme = async (req, res) => {
+    try {
+        let progress = await UserProgress.findOne({ username: req.user.username });
+        // Jika user belum menentukan (tidak ada overall progress), get default theme (light)
+        if (!progress) {
+            return res.json({
+                success: true,
+                data: {
+                    theme: 'light',
+                }
+            });
+        }
+        // Jika sudah, get theme yang sudah diset user
+        res.json({
+            success: true,
+            data: {
+                theme: progress.theme
+            }
+        });
+    } catch (error) {
+        console.error('Get theme error', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching theme preference'
+        });
+    }
+};
+
 exports.updateTheme = async (req, res) => {
     try {
         const { theme } = req.body;
-
+        
+        // Validasi theme
         if (!theme) {
             return res.status(400).json({
                 success: false,
@@ -44,7 +75,9 @@ exports.updateTheme = async (req, res) => {
             });
         }
 
+        // Mencari progress
         let progress = await UserProgress.findOne({ username: req.user.username });
+        // Membuat yang baru jika belum ada
         if (!progress) {
             progress = new UserProgress({
                 username: req.user.username,
@@ -70,6 +103,28 @@ exports.updateTheme = async (req, res) => {
     }
 };
 
+// Get lesson progress
+exports.getLessonProgress = async (req, res) => {
+    try {
+        const progress = await UserProgress.findOne(
+            { username: req.user.username },
+            { lessons: 1 }
+        );
+
+        res.json({
+            success: true,
+            data: progress ? progress.lessons : []
+        });
+    } catch (error) {
+        console.error('Get lesson progress error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching lesson progress'
+        });
+    }
+};
+
+// Update lesson progress
 exports.updateLessonProgress = async (req, res) => {
     try {
         const { lessonId } = req.params;
@@ -98,17 +153,6 @@ exports.updateLessonProgress = async (req, res) => {
             const lessonIndex = progress.lessons.findIndex(l => l.lesson_id === lessonId);
             
             if (lessonIndex === -1) {
-                const lesson = await Lesson.findById(lessonId);
-                if (lesson.order !== 1 && lesson.previousLessonId) {
-                    const previousLesson = progress.lessons.find(l => l.lesson_id === lesson.previousLessonId.toString());
-                    if (!previousLesson || previousLesson.status !== 'completed') {
-                        return res.status(400).json({
-                            success: false,
-                            error: 'Previous lesson must be completed first'
-                        });
-                    }
-                }
-
                 progress.lessons.push({
                     lesson_id: lessonId,
                     status,
