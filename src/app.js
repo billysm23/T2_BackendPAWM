@@ -19,7 +19,10 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || 'http://localhost:3000',
+    origin: [
+        'http://localhost:3000',
+        'https://t2-frontend-pawm.vercel.app'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
