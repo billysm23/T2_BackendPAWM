@@ -15,10 +15,10 @@ const lessonSchema = new mongoose.Schema({
       type: String,
       required: true
     },
-    previous_lesson_id: {
-      type: String,
+    prerequisites: [{
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Lesson'
-    }
+    }]
   });
   
 const Lesson = mongoose.model('Lesson', lessonSchema);  
