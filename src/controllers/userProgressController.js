@@ -1,30 +1,55 @@
 const UserProgress = require('../models/userProgress');
-const User = require('../models/user');
+const Lesson = require('../models/lesson');
+const AppError = require('../utils/errors/AppError');
+const ErrorCodes = require('../utils/errors/errorCodes');
 
-// Get semua progress
 exports.getUserProgress = async (req, res) => {
     try {
-        let progress = await UserProgress.findOne({ username: req.user.username });
-        // Jika tidak ada progress yang sudah berjalan
+        // Cari progress user yang ada
+        let progress = await UserProgress.findOne({ userId: req.user._id })
+            .populate('lessons.lessonId', 'title order prerequisites');
+
         if (!progress) {
-            progress = new UserProgress({
-                username: req.user.username,
-                theme: 'light',
-                lessons: []
+            // Ambil semua lessons untuk inisialisasi
+            const lessons = await Lesson.find({}).sort('order');
+            
+            // Inisialisasi lessons dengan lesson pertama unlocked
+            const initialLessons = lessons.map(lesson => ({
+                lessonId: lesson._id,
+                // Lesson pertama unlocked, sisanya locked
+                status: lesson.order === 1 ? 'unlocked' : 'locked',
+                score: 0,
+                timeSpent: 0,
+                completedContent: [],
+                lastAccessedAt: new Date()
+            }));
+
+            // Buat progress baru
+            progress = await UserProgress.create({
+                userId: req.user._id,
+                lessons: initialLessons
             });
-            await progress.save();
+
+            await progress.populate('lessons.lessonId', 'title order prerequisites');
         }
+
+        // Hitung statistik progress
+        const stats = {
+            totalLessons: progress.lessons.length,
+            completedLessons: progress.lessons.filter(l => l.status === 'completed').length,
+            averageScore: progress.lessons.reduce((acc, curr) => acc + curr.score, 0) / progress.lessons.length,
+            timeSpent: progress.lessons.reduce((acc, curr) => acc + curr.timeSpent, 0)
+        };
 
         res.json({
             success: true,
-            data: progress
+            data: {
+                progress,
+                stats
+            }
         });
     } catch (error) {
-        console.error('Get progress error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error fetching user progress'
-        });
+        throw new AppError('Failed to fetch user progress', 500, ErrorCodes.DB_ERROR);
     }
 };
 
@@ -125,43 +150,67 @@ exports.getLessonProgress = async (req, res) => {
     }
 };
 
-// Update lesson progress
 exports.updateLessonProgress = async (req, res) => {
     try {
         const { lessonId } = req.params;
-        const { status } = req.body;
+        const { status, timeSpent, completedContent } = req.body;
 
-        if (!['locked', 'unlocked', 'started', 'completed'].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid status value'
-            });
+        // Verify lesson exists
+        const lesson = await Lesson.findById(lessonId);
+        if (!lesson) {
+            throw new AppError('Lesson not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
         }
 
-        let progress = await UserProgress.findOne({ username: req.user.username });
-        
+        let progress = await UserProgress.findOne({ userId: req.user._id });
         if (!progress) {
-            progress = new UserProgress({
-                username: req.user.username,
-                theme: 'light',
-                lessons: [{
-                    lesson_id: lessonId,
-                    status,
-                    last_accessed: new Date()
-                }]
-            });
-        } else {
-            const lessonIndex = progress.lessons.findIndex(l => l.lesson_id === lessonId);
-            
-            if (lessonIndex === -1) {
-                progress.lessons.push({
-                    lesson_id: lessonId,
-                    status,
-                    last_accessed: new Date()
-                });
-            } else {
-                progress.lessons[lessonIndex].status = status;
-                progress.lessons[lessonIndex].last_accessed = new Date();
+            throw new AppError('User progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
+        }
+
+        // Find current lesson progress
+        const lessonIndex = progress.lessons.findIndex(l => 
+            l.lessonId.toString() === lessonId
+        );
+
+        if (lessonIndex === -1) {
+            throw new AppError('Lesson progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
+        }
+
+        // Check if lesson is accessible
+        if (lesson.order !== 1) { // Skip check for first lesson
+            const previousLesson = await Lesson.findOne({ order: lesson.order - 1 });
+            if (previousLesson) {
+                const previousLessonProgress = progress.lessons.find(l => 
+                    l.lessonId.toString() === previousLesson._id.toString()
+                );
+                
+                if (!previousLessonProgress || previousLessonProgress.status !== 'completed') {
+                    throw new AppError('Previous lesson must be completed first', 400, ErrorCodes.PREREQUISITE_NOT_MET);
+                }
+            }
+        }
+
+        // Update lesson progress
+        progress.lessons[lessonIndex] = {
+            ...progress.lessons[lessonIndex],
+            status,
+            timeSpent: (progress.lessons[lessonIndex].timeSpent || 0) + (timeSpent || 0),
+            completedContent: completedContent 
+                ? [...new Set([...progress.lessons[lessonIndex].completedContent, ...completedContent])]
+                : progress.lessons[lessonIndex].completedContent,
+            lastAccessedAt: new Date()
+        };
+
+        // If lesson is completed, unlock next lesson
+        if (status === 'completed') {
+            const nextLesson = await Lesson.findOne({ order: lesson.order + 1 });
+            if (nextLesson) {
+                const nextLessonIndex = progress.lessons.findIndex(l => 
+                    l.lessonId.toString() === nextLesson._id.toString()
+                );
+                
+                if (nextLessonIndex !== -1) {
+                    progress.lessons[nextLessonIndex].status = 'unlocked';
+                }
             }
         }
 
@@ -172,11 +221,7 @@ exports.updateLessonProgress = async (req, res) => {
             data: progress
         });
     } catch (error) {
-        console.error('Update lesson progress error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error updating lesson progress'
-        });
+        throw error;
     }
 };
 
