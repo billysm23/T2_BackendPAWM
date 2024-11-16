@@ -3,14 +3,14 @@ const router = express.Router();
 const lessonController = require('../controllers/lessonController');
 const auth = require('../middleware/auth');
 
-// Public routes
+// 4 card utama
 router.get('/', lessonController.getAllLessons);
 router.get('/:id', lessonController.getLessonById);
-router.get('/:id/prerequisites', lessonController.getLessonPrerequisites);
 
-// Protected routes (AUTH)
-router.post('/', auth, lessonController.createLesson);
-router.put('/:id', auth, lessonController.updateLesson);
-router.delete('/:id', auth, lessonController.deleteLesson);
+// Section spesifik
+router.get('/:id/overview', lessonController.getLessonOverview);
+router.get('/:id/content', lessonController.getLessonContent);
+router.get('/:id/resources', lessonController.getLessonResources);
+router.get('/:id/quiz', lessonController.getLessonQuiz);
 
 module.exports = router;
