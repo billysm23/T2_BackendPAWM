@@ -1,4 +1,5 @@
-const Lesson = require('../models/lesson');
+const { Lesson } = require('../models');
+const mongoose = require('mongoose');
 // const redis = require('redis');
 // const client = redis.createClient();
 
@@ -24,14 +25,8 @@ exports.getAllLessons = async (req, res) => {
 exports.getLessonById = async (req, res) => {
     try {
         console.log('Getting lesson with ID:', req.params.id);
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid lesson ID format'
-            });
-        }
         const lesson = await Lesson.findById(req.params.id)
-            .populate('prerequisites', 'title order');
+            .populate('prerequisite', 'title order');
         console.log('Found lesson:', lesson);
         if (!lesson) {
             return res.status(404).json({
