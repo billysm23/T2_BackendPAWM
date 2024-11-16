@@ -1,33 +1,20 @@
 const mongoose = require('mongoose');
 
-let cachedConnection = null;
+const MONGODB_URI = 'mongodb://mongodb:27017/ct-lab';
 
 const connectDB = async () => {
-    if (cachedConnection) {
-        console.log('Using cached database connection');
-        return cachedConnection;
-    }
-
-    try {
-        console.log('Connecting to MongoDB...');
-        const opts = {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            bufferCommands: false,
-            serverSelectionTimeoutMS: 5000,
-            socketTimeoutMS: 5000,
-        };
-
-        const conn = await mongoose.connect(process.env.MONGODB_URI, opts);
-        
-        cachedConnection = conn;
-        console.log('MongoDB connected successfully');
-        
-        return conn;
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        throw error;
-    }
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000
+    });
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    process.exit(1); 
+  }
 };
+
 
 module.exports = connectDB;
