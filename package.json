@@ -9,8 +9,9 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "vercel-build": "echo 'Built successfully'",
-    "vercel-dev": "vercel dev"
+    "vercel-build": "echo \"No build required\"",
+    "test": "echo \"No test specified\" && exit 0",
+    "migrate": "node src/scripts/migrateLessons.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

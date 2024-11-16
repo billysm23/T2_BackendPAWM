@@ -98,6 +98,7 @@ app.use((err, req, res, next) => {
 });
 
 if (process.env.VERCEL) {
+    // Export untuk mongo
     module.exports = app;
 } else {
     const PORT = process.env.PORT || 5000;

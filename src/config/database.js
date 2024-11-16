@@ -13,8 +13,7 @@ const connectDB = async () => {
         const opts = {
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            bufferCommands: true,
-            maxPoolSize: 1,
+            bufferCommands: false,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 5000,
         };
