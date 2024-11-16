@@ -1,10 +1,13 @@
-const { Lesson } = require('../models');
+const Lesson = require('../models/lesson');
+// const redis = require('redis');
+// const client = redis.createClient();
 
 exports.getAllLessons = async (req, res) => {
     try {
-        const lessons = await Lesson.find()
-            .sort({ order: 1 });
-
+        console.log('Fetching all lessons...');
+        const lessons = await Lesson.find().sort({ order: 1 });
+        console.log('Lessons found:', lessons.length);
+        
         res.json({
             success: true,
             data: lessons
@@ -20,9 +23,16 @@ exports.getAllLessons = async (req, res) => {
 
 exports.getLessonById = async (req, res) => {
     try {
+        console.log('Getting lesson with ID:', req.params.id);
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid lesson ID format'
+            });
+        }
         const lesson = await Lesson.findById(req.params.id)
             .populate('prerequisites', 'title order');
-
+        console.log('Found lesson:', lesson);
         if (!lesson) {
             return res.status(404).json({
                 success: false,
@@ -43,166 +53,146 @@ exports.getLessonById = async (req, res) => {
     }
 };
 
-exports.createLesson = async (req, res) => {
+exports.getLessonOverview = async (req, res) => {
+    const { id } = req.params;
+
     try {
-        const { title, order, description, content, prerequisites } = req.body;
+    //     const cached = await client.get(`lesson:${id}:overview`);
+    //     if (cached) {
+    //         return res.json({
+    //             success: true,
+    //             data: JSON.parse(cached)
+    //         });
+    //     }
 
-        if (!title || !order || !content) {
-            return res.status(400).json({
-                success: false,
-                error: 'Please provide title, order, and content'
-            });
-        }
+        const overview = await Lesson.findById(id)
+            .select('learningObjectives prerequisites topics')
+            .lean();
 
-        const existingLesson = await Lesson.findOne({ order });
-        if (existingLesson) {
-            return res.status(400).json({
-                success: false,
-                error: 'A lesson with this order already exists'
-            });
-        }
-
-        const lesson = new Lesson({
-            title,
-            order,
-            description,
-            content,
-            prerequisites
-        });
-
-        await lesson.save();
-
-        res.status(201).json({
-            success: true,
-            data: lesson
-        });
-    } catch (error) {
-        console.error('Error creating lesson:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Error creating lesson'
-        });
-    }
-};
-
-exports.updateLesson = async (req, res) => {
-    try {
-        const { title, order, description, content, prerequisites } = req.body;
-        const lessonId = req.params.id;
-
-        // cek lesson ada/tidak
-        const lesson = await Lesson.findById(lessonId);
-        if (!lesson) {
-            return res.status(404).json({
-                success: false,
-                error: 'Lesson not found'
-            });
-        }
-
-        // cek masalah ketika urutan diganti
-        if (order && order !== lesson.order) {
-            const existingLesson = await Lesson.findOne({ 
-                order, 
-                _id: { $ne: lessonId } 
-            });
-            if (existingLesson) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'A lesson with this order already exists'
-                });
-            }
-        }
-
-        const updatedLesson = await Lesson.findByIdAndUpdate(
-            lessonId,
-            {
-                title,
-                order,
-                description,
-                content,
-                prerequisites
-            },
-            { new: true, runValidators: true }
-        );
+        // await client.setEx(
+        //     `lesson:${id}:overview`,
+        //     3600,
+        //     JSON.stringify(overview)
+        // );
 
         res.json({
             success: true,
-            data: updatedLesson
+            data: overview
         });
+
     } catch (error) {
-        console.error('Error updating lesson:', error);
+        console.error('Error fetching overview:', error);
         res.status(500).json({
             success: false,
-            error: 'Error updating lesson'
+            error: 'Error fetching lesson overview'
         });
     }
 };
 
-exports.deleteLesson = async (req, res) => {
+exports.getLessonContent = async (req, res) => {
+    const { id } = req.params;
+
     try {
-        const lesson = await Lesson.findById(req.params.id);
-        
-        if (!lesson) {
-            return res.status(404).json({
-                success: false,
-                error: 'Lesson not found'
-            });
-        }
+        // const cached = await client.get(`lesson:${id}:content`);
+        // if (cached) {
+        //     return res.json({
+        //         success: true,
+        //         data: JSON.parse(cached)
+        //     });
+        // }
 
-        // cek prerequisit
-        const dependentLessons = await Lesson.find({
-            prerequisites: req.params.id
-        });
+        const content = await Lesson.findById(id)
+            .select('content keyConcepts interactiveExamples practiceProblems')
+            .lean();
 
-        if (dependentLessons.length > 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Cannot delete lesson: it is a prerequisite for other lessons',
-                dependentLessons: dependentLessons.map(l => ({
-                    id: l._id,
-                    title: l.title
-                }))
-            });
-        }
-
-        await lesson.deleteOne();
+        // await client.setEx(
+        //     `lesson:${id}:content`,
+        //     3600,
+        //     JSON.stringify(content)
+        // );
 
         res.json({
             success: true,
-            message: 'Lesson deleted successfully'
+            data: content
         });
+
     } catch (error) {
-        console.error('Error deleting lesson:', error);
+        console.error('Error fetching content:', error);
         res.status(500).json({
             success: false,
-            error: 'Error deleting lesson'
+            error: 'Error fetching lesson content'
         });
     }
 };
 
-exports.getLessonPrerequisites = async (req, res) => {
-    try {
-        const lesson = await Lesson.findById(req.params.id)
-            .populate('prerequisites', 'title order description');
+exports.getLessonResources = async (req, res) => {
+    const { id } = req.params;
 
-        if (!lesson) {
-            return res.status(404).json({
-                success: false,
-                error: 'Lesson not found'
-            });
-        }
+    try {
+        // const cached = await client.get(`lesson:${id}:resources`);
+        // if (cached) {
+        //     return res.json({
+        //         success: true,
+        //         data: JSON.parse(cached)
+        //     });
+        // }
+
+        const resources = await Lesson.findById(id)
+            .select('additionalReading videos documents externalLinks')
+            .lean();
+
+        // await client.setEx(
+        //     `lesson:${id}:resources`,
+        //     3600,
+        //     JSON.stringify(resources)
+        // );
 
         res.json({
             success: true,
-            data: lesson.prerequisites
+            data: resources
         });
+
     } catch (error) {
-        console.error('Error fetching prerequisites:', error);
+        console.error('Error fetching resources:', error);
         res.status(500).json({
             success: false,
-            error: 'Error fetching prerequisites'
+            error: 'Error fetching lesson resources'
         });
     }
 };
 
-module.exports = exports;
+exports.getLessonQuiz = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // const cached = await client.get(`lesson:${id}:quiz`);
+        // if (cached) {
+        //     return res.json({
+        //         success: true,
+        //         data: JSON.parse(cached)
+        //     });
+        // }
+
+        const quiz = await Lesson.findById(id)
+            .select('quiz')
+            .lean();
+
+        // await client.setEx(
+        //     `lesson:${id}:quiz`,
+        //     3600,
+        //     JSON.stringify(quiz)
+        // );
+
+        res.json({
+            success: true,
+            data: quiz
+        });
+
+    } catch (error) {
+        console.error('Error fetching quiz:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching lesson quiz'
+        });
+    }
+};
