@@ -1,76 +1,86 @@
 const mongoose = require('mongoose');
 
-const additionalReadingSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  url: String,
-  type: String
-}, { _id: false });
-
 const lessonSchema = new mongoose.Schema({
   _id: String,
   order: Number,
-  title: {
-    type: String,
-    required: true
-  },
+  title: String,
   description: String,
   duration: String,
   practiceTime: String,
-  level: String,
-  sections: Number,
-  prerequisite: [{
+  level: {
     type: String,
-    ref: 'Lesson'
-  }],
-
-  // Overview Section
+    enum: ['Beginner', 'Intermediate', 'Advanced']
+  },
+  sections: Number,
+  prerequisite: [String],
   learningObjectives: [String],
   prerequisites: [String],
+  
   topics: [{
     title: String,
     description: String,
-    icon: String
+    icon: String,
+    _id: {
+      $oid: String
+    }
   }],
 
-  // Content Section
   content: String,
+
   keyConcepts: [{
     title: String,
     description: String,
-    example: String
+    example: String,
+    _id: {
+      $oid: String
+    }
   }],
 
   practiceProblems: [{
     title: String,
     description: String,
-    hint: String
+    hint: String,
+    _id: {
+      $oid: String
+    }
   }],
 
-  // Resources Section
-  additionalReading: [additionalReadingSchema],
-  
+  additionalReading: [{
+    title: String,
+    description: String,
+    url: String,
+    type: String
+  }],
+
   videos: [{
     title: String,
     url: String,
     duration: String,
-    thumbnail: String
+    thumbnail: String,
+    _id: {
+      $oid: String
+    }
   }],
 
   documents: [{
     title: String,
     description: String,
     url: String,
-    size: String
+    size: String,
+    _id: {
+      $oid: String
+    }
   }],
 
   externalLinks: [{
     title: String,
     description: String,
-    url: String
+    url: String,
+    _id: {
+      $oid: String
+    }
   }],
 
-  // Quiz Section
   quiz: [{
     _id: String,
     question_text: String,
@@ -84,10 +94,8 @@ const lessonSchema = new mongoose.Schema({
       isCorrect: Boolean
     }],
     order: Number
-  }]
-}, {
-  timestamps: true
+  }],
 });
-
-const Lesson = mongoose.model('Lesson', lessonSchema);
+  
+const Lesson = mongoose.model('Lesson', lessonSchema);  
 module.exports = Lesson;
