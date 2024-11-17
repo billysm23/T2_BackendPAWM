@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Definisikan sub-schemas untuk struktur yang kompleks
 const additionalReadingSchema = new mongoose.Schema({
   title: String,
   description: String,
@@ -49,7 +48,7 @@ const lessonSchema = new mongoose.Schema({
   }],
 
   // Resources Section
-  additionalReading: [additionalReadingSchema], // Gunakan sub-schema yang telah didefinisikan
+  additionalReading: [additionalReadingSchema],
   
   videos: [{
     title: String,

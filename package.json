@@ -5,13 +5,11 @@
   "engines": {
     "node": "18.x"
   },
-  "type": "commonjs",
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "vercel-build": "echo \"No build required\"",
-    "test": "echo \"No test specified\" && exit 0",
-    "migrate": "node src/scripts/migrateLessons.js"
+    "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,8 +19,7 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.0.3",
-    "redis": "^4.7.0"
+    "mongoose": "^7.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
