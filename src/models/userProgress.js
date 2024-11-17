@@ -14,7 +14,7 @@ const userProgressSchema = new mongoose.Schema({
   },
   lessons: [{
     lessonId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Lesson',
       required: true
     },

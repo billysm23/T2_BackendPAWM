@@ -155,107 +155,77 @@ exports.updateLessonProgress = async (req, res) => {
         const { lessonId } = req.params;
         const { status, timeSpent, completedContent } = req.body;
 
-        console.log('Updating lesson progress:', { lessonId, status, userId: req.user._id });
-
-        // Verifikasi lesson exists
+        // Verify lesson exists
         const lesson = await Lesson.findById(lessonId);
         if (!lesson) {
             throw new AppError('Lesson not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
         }
 
-        // Cari atau buat progress user
         let progress = await UserProgress.findOne({ userId: req.user._id });
         if (!progress) {
-            // Inisialisasi progress baru
-            progress = new UserProgress({
-                userId: req.user._id,
-                lessons: [{
-                    lessonId: lessonId,
-                    status: 'started',
-                    timeSpent: timeSpent || 0,
-                    completedContent: completedContent || [],
-                    lastAccessedAt: new Date()
-                }]
-            });
-        } else {
-            // Update existing progress
-            const lessonIndex = progress.lessons.findIndex(l => 
-                l.lessonId.toString() === lessonId
-            );
+            throw new AppError('User progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
+        }
 
-            if (lessonIndex === -1) {
-                // Tambah lesson baru ke progress
-                progress.lessons.push({
-                    lessonId: lessonId,
-                    status: status || 'started',
-                    timeSpent: timeSpent || 0,
-                    completedContent: completedContent || [],
-                    lastAccessedAt: new Date()
-                });
-            } else {
-                // Update lesson yang ada
-                progress.lessons[lessonIndex] = {
-                    ...progress.lessons[lessonIndex],
-                    status: status || progress.lessons[lessonIndex].status,
-                    timeSpent: (progress.lessons[lessonIndex].timeSpent || 0) + (timeSpent || 0),
-                    completedContent: completedContent 
-                        ? [...new Set([...progress.lessons[lessonIndex].completedContent, ...completedContent])]
-                        : progress.lessons[lessonIndex].completedContent,
-                    lastAccessedAt: new Date()
-                };
+        // Find current lesson progress
+        const lessonIndex = progress.lessons.findIndex(l => 
+            l.lessonId.toString() === lessonId
+        );
 
-                // Jika completed, unlock next lesson
-                if (status === 'completed') {
-                    const nextLesson = await Lesson.findOne({ order: lesson.order + 1 });
-                    if (nextLesson) {
-                        const nextLessonIndex = progress.lessons.findIndex(l => 
-                            l.lessonId.toString() === nextLesson._id.toString()
-                        );
-                        
-                        if (nextLessonIndex !== -1) {
-                            progress.lessons[nextLessonIndex].status = 'unlocked';
-                        } else {
-                            progress.lessons.push({
-                                lessonId: nextLesson._id,
-                                status: 'unlocked',
-                                lastAccessedAt: new Date()
-                            });
-                        }
-                    }
+        if (lessonIndex === -1) {
+            throw new AppError('Lesson progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
+        }
+
+        // Check if lesson is accessible
+        if (lesson.order !== 1) { // Skip check for first lesson
+            const previousLesson = await Lesson.findOne({ order: lesson.order - 1 });
+            if (previousLesson) {
+                const previousLessonProgress = progress.lessons.find(l => 
+                    l.lessonId.toString() === previousLesson._id.toString()
+                );
+                
+                if (!previousLessonProgress || previousLessonProgress.status !== 'completed') {
+                    throw new AppError('Previous lesson must be completed first', 400, ErrorCodes.PREREQUISITE_NOT_MET);
+                }
+            }
+        }
+
+        // Update lesson progress
+        progress.lessons[lessonIndex] = {
+            ...progress.lessons[lessonIndex],
+            status,
+            timeSpent: (progress.lessons[lessonIndex].timeSpent || 0) + (timeSpent || 0),
+            completedContent: completedContent 
+                ? [...new Set([...progress.lessons[lessonIndex].completedContent, ...completedContent])]
+                : progress.lessons[lessonIndex].completedContent,
+            lastAccessedAt: new Date()
+        };
+
+        // If lesson is completed, unlock next lesson
+        if (status === 'completed') {
+            const nextLesson = await Lesson.findOne({ order: lesson.order + 1 });
+            if (nextLesson) {
+                const nextLessonIndex = progress.lessons.findIndex(l => 
+                    l.lessonId.toString() === nextLesson._id.toString()
+                );
+                
+                if (nextLessonIndex !== -1) {
+                    progress.lessons[nextLessonIndex].status = 'unlocked';
                 }
             }
         }
 
         await progress.save();
-        console.log('Progress updated successfully');
 
         res.json({
             success: true,
             data: progress
         });
     } catch (error) {
-        console.error('Error updating progress:', error);
-        if (error instanceof AppError) {
-            res.status(error.statusCode).json({
-                success: false,
-                error: {
-                    code: error.errorCode,
-                    message: error.message
-                }
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: {
-                    code: ErrorCodes.INTERNAL_SERVER_ERROR,
-                    message: 'Failed to update progress'
-                }
-            });
-        }
+        throw error;
     }
 };
 
-// Submit quiz
+// Submit quiz answers
 exports.submitQuizAnswers = async (req, res) => {
     try {
         const { lessonId } = req.params;

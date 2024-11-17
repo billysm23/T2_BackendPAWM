@@ -1,47 +1,47 @@
 const mongoose = require('mongoose');
 
 const userQuizSchema = new mongoose.Schema({
-    userId: {
+    user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    lessonId: {
+    lesson_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Lesson',
         required: true
     },
-    answers: [{
-        questionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-        },
-        selectedAnswer: mongoose.Schema.Types.Mixed,
-        answeredAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
     status: {
         type: String,
-        enum: ['in_progress', 'completed'],
-        default: 'in_progress'
+        enum: ['not_started', 'in_progress', 'completed'],
+        default: 'not_started'
     },
-    startedAt: {
-        type: Date,
-        default: Date.now
+    answers: [{
+        question_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Question'
+        },
+        user_answer: mongoose.Schema.Types.Mixed,
+        is_correct: Boolean,
+        answered_at: Date
+    }],
+    score: {
+        type: Number,
+        min: 0,
+        max: 100
     },
-    completedAt: Date,
-    score: Number,
     attempts: {
         type: Number,
-        default: 1
-    }
+        default: 0
+    },
+    started_at: Date,
+    completed_at: Date
 }, {
-        timestamps: true
+    timestamps: { 
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
+    }
 });
-
-userQuizSchema.index({ userId: 1, lessonId: 1 });
 
 const UserQuiz = mongoose.model('UserQuiz', userQuizSchema);
 module.exports = UserQuiz;

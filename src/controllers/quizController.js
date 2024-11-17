@@ -83,82 +83,44 @@ exports.getQuizByLesson = async (req, res) => {
     }
 };
 
-exports.saveQuizProgress = async (req, res) => {
-    try {
-        const { lessonId } = req.params;
-        const { answers } = req.body;
-        const userId = req.user._id;
-    
-        // Find existing progress or create new
-        let quizProgress = await UserQuizProgress.findOne({
-            userId,
-            lessonId,
-            status: 'in_progress'
-        });
-    
-        if (!quizProgress) {
-            quizProgress = new UserQuizProgress({
-                userId,
-                lessonId,
-                answers: []
-            });
-        }
-    
-        // Update answers
-        answers.forEach(answer => {
-            const existingAnswerIndex = quizProgress.answers.findIndex(
-            a => a.questionId.toString() === answer.questionId
-            );
-    
-            if (existingAnswerIndex !== -1) {
-                quizProgress.answers[existingAnswerIndex] = {
-                    ...quizProgress.answers[existingAnswerIndex],
-                    selectedAnswer: answer.selectedAnswer,
-                    answeredAt: new Date()
-                };
-            } else {
-                quizProgress.answers.push({
-                    questionId: answer.questionId,
-                    selectedAnswer: answer.selectedAnswer,
-                    answeredAt: new Date()
-                });
-            }
-        });
-    
-        await quizProgress.save();
-  
-            res.json({
-                success: true,
-                data: quizProgress
-            });
-        } catch (error) {
-            console.error('Save quiz progress error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to save quiz progress'
-        });
-    }
-};
-
 exports.getQuizProgress = async (req, res) => {
     try {
-        const { lessonId } = req.params;
-        const userId = req.user._id;
-    
-        const progress = await UserQuizProgress.findOne({
-            userId,
-            lessonId,
+        const quizProgress = await UserQuiz.find({
+            user_id: req.user._id,
             status: 'in_progress'
-        });
-
+        }).populate('lesson_id', 'title');
         res.json({
             success: true,
-            data: progress
+            data: quizProgress
         });
     } catch (error) {
         res.status(500).json({
             success: false,
             error: 'Failed to fetch quiz progress'
+        });
+    }
+};
+
+exports.getQuizHistory = async (req, res) => {
+    try {
+        const user_id = req.user._id;
+
+        const quizHistory = await UserQuiz.find({
+            user_id,
+            status: 'completed'
+        })
+        .populate('lesson_id', 'title')
+        .sort({ completed_at: -1 });
+
+        res.json({
+            success: true,
+            data: quizHistory
+        });
+    } catch (error) {
+        console.error('Error fetching quiz history:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Error fetching quiz history'
         });
     }
 };

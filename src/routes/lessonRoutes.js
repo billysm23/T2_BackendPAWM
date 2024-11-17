@@ -13,9 +13,4 @@ router.get('/:id/content', lessonController.getLessonContent);
 router.get('/:id/resources', lessonController.getLessonResources);
 router.get('/:id/quiz', lessonController.getLessonQuiz);
 
-// Komponen quiz
-router.get('/:id/quiz/progress', auth, lessonController.getQuizProgress);
-router.post('/:id/quiz/progress', auth, lessonController.saveQuizProgress);
-router.post('/:id/quiz/submit', auth, lessonController.submitQuiz);
-
 module.exports = router;
