@@ -28,7 +28,7 @@ const questionSchema = new mongoose.Schema({
         isCorrect: Boolean
     }]
 }, {
-    collection: 'questions'
+    collection: 'question'
 });
 
 questionSchema.index({ lesson: 1, question_no: 1 });
