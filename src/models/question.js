@@ -1,30 +1,38 @@
 const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema({
-    lesson_id: {
+    _id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Lesson',
-        required: true
+        auto: true
     },
-    type: {
-        type: String,
-        enum: ['multiple_choice', 'true_false', 'matching', 'drag_drop', 'multi_select'],
+    lesson: {
+        type: Number,
+        required: true,
+        index: true
+    },
+    question_no: {
+        type: Number,
         required: true
     },
     question_text: {
         type: String,
         required: true
     },
+    type: {
+        type: String,
+        enum: ['multiple_choice', 'true_false'],
+        required: true
+    },
     options: [{
         text: String,
         isCorrect: Boolean
-    }],
-    order: Number,
-    points: {
-        type: Number,
-        default: 1
-    }
+    }]
+}, {
+    collection: 'question'
 });
 
+questionSchema.index({ lesson: 1, question_no: 1 });
+
 const Question = mongoose.model('Question', questionSchema);
+
 module.exports = Question;
