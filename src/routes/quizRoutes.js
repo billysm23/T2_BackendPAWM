@@ -4,8 +4,6 @@ const quizController = require('../controllers/quizController');
 const auth = require('../middleware/auth');
 
 router.get('/lesson/:lessonId', auth, quizController.getQuizByLesson);
-router.post('/submit', auth, quizController.submitQuiz);
-router.get('/progress', auth, quizController.getQuizProgress);
-router.get('/history', auth, quizController.getQuizHistory);
+router.post('/:lessonId/submit', auth, quizController.submitQuiz);
 
 module.exports = router;

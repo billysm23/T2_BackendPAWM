@@ -6,8 +6,6 @@ const auth = require('../middleware/auth');
 router.get('/', auth, userProgressController.getUserProgress);
 router.get('/theme', auth, userProgressController.getTheme);
 router.put('/theme', auth, userProgressController.updateTheme);
-router.get('/lessons', auth, userProgressController.getLessonProgress);
-router.put('/lessons/:lessonId', auth, userProgressController.updateLessonProgress);
-router.post('/quiz/:lessonId', auth, userProgressController.submitQuizAnswers);
+router.put('/lessons/:lessonId', auth, userProgressController.submitQuizAndUpdateProgress);
 
 module.exports = router;
