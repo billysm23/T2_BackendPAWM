@@ -1,20 +1,64 @@
-const { Question, UserProgress } = require('../models');
+const Question = require('../models/question');
+const UserProgress = require('../models/userProgress');
 const AppError = require('../utils/errors/AppError');
 const ErrorCodes = require('../utils/errors/errorCodes');
 
 exports.getQuizByLesson = async (req, res) => {
     try {
         const { lessonId } = req.params;
-        const questions = await Question.find({ 
-            lesson_id: lessonId 
-        }).select('-options.isCorrect');
+        console.log('Fetching quiz for lesson:', lessonId);
+
+        const lessonNumber = parseInt(lessonId);
+        if (isNaN(lessonNumber)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid lesson ID'
+            });
+        }
+
+        const questions = await Question.find(
+            { lesson: lessonNumber },
+            null,
+            { sort: { question_no: 1 } }
+        );
+
+        console.log(`Found ${questions.length} questions for lesson ${lessonNumber}`);
+
+        if (!questions || questions.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    questions: [],
+                    message: `No questions found for lesson ${lessonNumber}`
+                }
+            });
+        }
+
+        // Format questions untuk client (tanpa isCorrect)
+        const formattedQuestions = questions.map(q => ({
+            _id: q._id,
+            question_no: q.question_no,
+            question_text: q.question_text,
+            type: q.type,
+            options: q.options.map(opt => ({
+                text: opt.text
+            }))
+        }));
 
         res.json({
             success: true,
-            data: questions
+            data: {
+                questions: formattedQuestions,
+                totalQuestions: questions.length
+            }
         });
+
     } catch (error) {
-        throw new AppError('Failed to fetch quiz questions', 500, ErrorCodes.DB_ERROR);
+        console.error('Error in getQuizByLesson:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 };
 
@@ -22,59 +66,43 @@ exports.submitQuiz = async (req, res) => {
     try {
         const { lessonId } = req.params;
         const { answers } = req.body;
-
-        // Validasi jawaban
-        const questions = await Question.find({ lesson_id: lessonId });
-        if (!questions.length) {
-            throw new AppError('Quiz not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
-        }
-
+        
+        // Ambil semua pertanyaan untuk lesson ini
+        const questions = await Question.find({ lesson: lessonNumber });
+        
         // Hitung score
-        let correctAnswers = 0;
+        let correctCount = 0;
         questions.forEach(question => {
-            const userAnswer = answers.find(a => a.questionId === question._id.toString());
+            const userAnswer = answers.find(ans => 
+                ans.questionId === question._id.toString()
+            );
+            
             if (userAnswer) {
                 const correctOption = question.options.find(opt => opt.isCorrect);
                 if (correctOption && userAnswer.selectedAnswer === correctOption._id.toString()) {
-                    correctAnswers++;
+                    correctCount++;
                 }
             }
         });
 
-        const score = (correctAnswers / questions.length) * 100;
-
-        // Update progress
-        const progress = await UserProgress.findOne({ userId: req.user._id });
-        if (!progress) {
-            throw new AppError('User progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
-        }
-
-        const lessonProgress = progress.lessonProgresses.find(
-            lp => lp.lessonId.toString() === lessonId
-        );
-
-        if (!lessonProgress) {
-            throw new AppError('Lesson progress not found', 404, ErrorCodes.RESOURCE_NOT_FOUND);
-        }
-
-        // Update skor dan status
-        lessonProgress.quizScore = score;
-        lessonProgress.lastAttemptAt = new Date();
-        if (score >= 60) {
-            lessonProgress.status = 'completed';
-        }
-
-        await progress.save();
+        const score = Math.round((correctCount / questions.length) * 100);
+        const passed = score >= 60;
 
         res.json({
             success: true,
             data: {
                 score,
-                passed: score >= 60,
-                progress: lessonProgress
+                passed,
+                correctAnswers: correctCount,
+                totalQuestions: questions.length
             }
         });
+
     } catch (error) {
-        throw error;
+        console.error('Error in submitQuiz:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 };
